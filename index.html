@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Famous Smash</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#11182c;color:#fff;font-family:system-ui,Arial;overflow:hidden}
+canvas{display:block}button,input,select{font:inherit}button{border:0;border-radius:12px;padding:12px 16px;font-weight:800;cursor:pointer;background:#ffcf4a;color:#251b2b}button:disabled{opacity:.4;cursor:not-allowed}button.secondary{background:#40517e;color:#fff}
+#menu,#aliasScreen,#resultScreen,#celebrationScreen,#lobbyScreen{position:fixed;inset:0;display:grid;place-items:center;background:linear-gradient(135deg,#10182bee,#3b1e50dd);z-index:10;padding:16px}
+.card{width:min(94vw,570px);max-height:92vh;overflow:auto;text-align:center;background:#121c32f5;border:1px solid #ffffff35;border-radius:20px;padding:22px;box-shadow:0 16px 45px #0009}
+h1{font-size:clamp(34px,7vw,62px);line-height:1;margin:6px 0 12px;color:#ffdc57;text-shadow:0 5px #a34d26}
+p{color:#dbe5ff}.modes{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0}.modes button.active{outline:3px solid white}
+input,select{background:#f5f7ff;color:#18213a;border:0;border-radius:10px;padding:12px;width:100%;margin:6px 0 12px}
+#heroList{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:12px 0}
+.hero{background:#243453;border:1px solid #ffffff33;color:white;text-align:left;padding:10px;border-radius:12px}
+.hero.selected{outline:3px solid #ffcf4a}
+.featureRow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}.featureRow button{background:#8d5cf6;color:white}.featurePanel{background:#1d2b49;border:1px solid #ffffff35;border-radius:14px;padding:14px;margin:12px 0;text-align:left}.progress{height:12px;background:#ffffff25;border-radius:20px;overflow:hidden}.progress i{display:block;height:100%;background:#ffcf4a;width:0}.rankBadge{font-size:26px;color:#ffdc57;font-weight:900}.tier{display:inline-block;padding:5px 9px;margin:3px;border-radius:8px;background:#33496e}.rewardGrid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}.reward{background:#263957;border-radius:9px;padding:7px 3px;text-align:center;font-size:11px}.reward.locked{opacity:.45}.onlinePanel{margin-top:16px;padding-top:12px;border-top:1px solid #ffffff30}.onlineRow{display:flex;gap:8px;align-items:center}.onlineRow>*{flex:1}.onlinePanel small{display:block;color:#c9d7f4;margin-top:7px}.roomPlayer{background:#243453;border-radius:9px;padding:8px;margin:5px 0;text-align:left}.roomCode{font-size:34px;letter-spacing:8px;color:#ffdc57;font-weight:900}.netError{color:#ff9c9c!important}.hero small{display:block;color:#d5e0ff;font-weight:500}
+#hud{position:fixed;inset:0;pointer-events:none;z-index:2}#top{position:absolute;top:10px;left:10px;right:10px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.hudbox{background:#10182ddd;border:1px solid #ffffff35;border-radius:13px;padding:10px 13px;text-shadow:0 2px 4px #000}
+#fighters{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:6px;flex-wrap:wrap;justify-content:center;width:min(96vw,900px)}
+.fighter{background:#10182ddd;border:2px solid var(--c);border-radius:10px;padding:5px 8px;min-width:78px;text-align:center;font-size:11px}
+.fighter b{display:block;font-size:13px}.meter{height:6px;background:#ffffff33;border-radius:8px;overflow:hidden;margin-top:4px}.meter i{display:block;height:100%;background:var(--c)}
+#help{position:absolute;left:10px;bottom:10px;font-size:11px;background:#10182ddd;padding:8px 10px;border-radius:9px}
+#top button{pointer-events:auto}.hidden{display:none!important}
+@media(max-width:560px){.modes{grid-template-columns:repeat(2,1fr)}#help{display:none}#fighters{bottom:5px}.fighter{min-width:65px}}
+</style>
+</head>
+<body>
+<div id="aliasScreen"><div class="card"><h1>FAMOUS SMASH</h1><p>¡Bienvenido a la arena! Primero elige tu alias.</p><input id="aliasInput" maxlength="14" placeholder="Escribe tu alias" autocomplete="nickname"><button id="aliasContinue">CONTINUAR</button></div></div>
+<div id="menu" class="hidden"><div class="card">
+<h1>FAMOUS SMASH</h1><p>¡Saca a tus rivales de la plataforma!</p><p>Jugador: <b id="aliasLabel"></b> · Trofeos: <b id="wins">0</b></p>
+<b>Modo de juego</b><div class="modes"><button data-mode="1" class="active">1 vs 1</button><button data-mode="3">3 vs 3</button><button data-mode="5">5 vs 5</button><button data-mode="10">10 vs 10</button></div>
+<b>Elige tu luchador</b><div id="heroList"></div>
+<button id="start">¡A PELEAR! (CONTRA BOTS)</button>
+<div class="featureRow"><button id="openRanked">🏆 COMPETITIVO</button><button id="openPass">🎟️ PASE DE BATALLA</button></div><div class="featurePanel"><b>RANGO:</b> <span id="rankSummary" class="rankBadge">BRONCE</span> · <b id="rpSummary">0 RP</b><br><small id="xpSummary">Pase: nivel 1 · 0 XP</small></div><div class="onlinePanel"><b>JUGAR ONLINE CON AMIGOS</b><div class="onlineRow"><button id="createRoom">CREAR SALA</button></div><input id="roomCodeInput" maxlength="4" placeholder="CÓDIGO DE 4 LETRAS"><button id="joinRoom" class="secondary">UNIRME A UNA SALA</button><small id="netInfo">Para jugar online, abre esta misma página publicada en el servidor de Famous Smash.</small></div>
+</div></div>
+
+<div id="rankScreen" class="hidden" style="position:fixed;inset:0;z-index:12;background:#10182bee;display:grid;place-items:center;padding:16px"><div class="card"><h1>🏆 COMPETITIVO</h1><div class="rankBadge" id="rankName">BRONCE</div><p><b id="rankPoints">0 RP</b> · Temporada 1</p><p>Busca rivales reales de tu nivel. Si no hay jugadores disponibles, podrás cancelar la búsqueda y jugar práctica contra bots.</p><p id="rankQueueStatus">Cola competitiva: desconectado</p><div id="rankLeaderboard" class="roomPlayer">Cargando clasificación...</div><div id="rankLadder"><span class="tier">Bronce 0</span><span class="tier">Plata 100</span><span class="tier">Oro 250</span><span class="tier">Platino 450</span><span class="tier">Diamante 700</span><span class="tier">Maestro 1000</span><span class="tier">Leyenda 1400</span></div><button id="startRanked">BUSCAR RIVAL ONLINE</button> <button id="cancelRanked" class="secondary">CANCELAR</button> <button id="closeRanked" class="secondary">VOLVER</button></div></div><div id="passScreen" class="hidden" style="position:fixed;inset:0;z-index:12;background:#10182bee;display:grid;place-items:center;padding:16px"><div class="card"><h1>🎟️ PASE DE BATALLA</h1><p>Temporada 1 · Expedición de campeones</p><h2 id="passLevel">NIVEL 1 / 50</h2><p id="passXp">0 / 100 XP</p><div class="progress"><i id="passProgress"></i></div><p>Recompensas gratis cada nivel. Consigue XP jugando partidas y completando misiones.</p><div id="passRewards" class="rewardGrid"></div><p id="passMission">Misión: juega 3 partidas esta temporada.</p><button id="closePass" class="secondary">VOLVER</button></div></div><div id="lobbyScreen" class="hidden"><div class="card"><h1>SALA PRIVADA</h1><p>Comparte este código con tus amigos:</p><div id="roomCode" class="roomCode">----</div><p id="lobbyStatus">Esperando jugadores...</p><div id="roomPlayers"></div><button id="startOnline">COMENZAR PARTIDA</button> <button id="leaveRoom" class="secondary">SALIR DE LA SALA</button><p style="font-size:11px">El creador de la sala inicia la partida. Si faltan jugadores, los espacios se completan con bots.</p></div></div>
+<div id="celebrationScreen" class="hidden"><div class="card"><h1>¡ELIGE TU CELEBRACIÓN!</h1><p>¿Cómo quieres festejar tu victoria?</p><div class="modes" style="grid-template-columns:repeat(2,1fr)"><button data-dance="griddy">🕺 GRIDDY</button><button data-dance="moonwalk">🌙 MOONWALK</button><button data-dance="dab">😎 DAB</button><button data-dance="dunk">🏀 CLAVADA</button></div><p style="font-size:12px">Tu luchador hará la animación que elijas.</p></div></div>
+<div id="resultScreen" class="hidden"><div class="card"><h1 id="resultTitle">¡VICTORIA!</h1><p id="resultMessage"></p><button id="resultMenu">VOLVER AL MENÚ</button> <button id="playAgain" class="secondary">OTRA PARTIDA</button></div></div>
+<div id="hud"><div id="top"><div class="hudbox"><b>FAMOUS SMASH</b><div id="status">Preparado</div></div><button id="back" class="secondary">MENÚ</button></div><div id="fighters"></div><div id="help">Mover: WASD / flechas · Saltar: ESPACIO · Golpear: F · Especial: G</div></div>
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+const $=s=>document.querySelector(s);
+const roster=['Michael Jackson','Mbappé','Canelo','Cristiano Ronaldo','Messi','Neymar','MrBeast','Robot','Panda','Tiburón','Mario','Sonic','Link','Pikachu','Kirby','Spider-Man','Goku','Wednesday','SpongeBob','Naruto'];
+const colors=[0x252525,0x2e7de0,0xb92d38,0xffffff,0x54a8ff,0xffdb48,0x36bd82,0x999999,0xf2f2f2,0x4777a8,0xe73528,0x176bdb,0x267a45,0xffdf22,0xf5eaff,0xd51f36,0xff8c18,0x292238,0xffd52a,0xff8a22];
+let alias=localStorage.getItem('fs_alias')||'',wins=Number(localStorage.getItem('fs_wins')||0);
+const profileId=localStorage.getItem('fs_profile_id')||(()=>{const id=(crypto.randomUUID?crypto.randomUUID():('p'+Date.now()+Math.random().toString(16).slice(2)));localStorage.setItem('fs_profile_id',id);return id})();
+let rankedOnline=false,rankedResultSent=false;
+let unlocked=JSON.parse(localStorage.getItem('fs_unlocked')||'["Michael Jackson"]');
+let selectedHero=unlocked[0]||'Michael Jackson',mode=1,rankedMode=false,rankPoints=Number(localStorage.getItem('fs_rp')||0),passXP=Number(localStorage.getItem('fs_pass_xp')||0),seasonGames=Number(localStorage.getItem('fs_season_games')||0),fighters=[],player=null,running=false,keys={},effects=[];
+let onlineMode=false,netSocket=null,netId=null,roomCode='',isHost=false,netPlayers=[],netStateTimer=null,netPingTimer=null;
+$('#aliasInput').value=alias;
+function showMenu(){ $('#rankScreen').classList.add('hidden');$('#passScreen').classList.add('hidden');$('#aliasScreen').classList.add('hidden');$('#lobbyScreen').classList.add('hidden');$('#resultScreen').classList.add('hidden');$('#celebrationScreen').classList.add('hidden');$('#menu').classList.remove('hidden');$('#aliasLabel').textContent=alias;$('#wins').textContent=wins;renderHeroes()}
+function rankInfo(){let tiers=[['BRONCE',0],['PLATA',100],['ORO',250],['PLATINO',450],['DIAMANTE',700],['MAESTRO',1000],['LEYENDA',1400]];return tiers.reduce((a,t)=>rankPoints>=t[1]?t[0]:a,'BRONCE')}
+function passLevel(){return Math.min(50,Math.floor(passXP/100)+1)}
+function refreshProgress(){let r=rankInfo(),lv=passLevel(),xp=passXP%100;$('#rankSummary').textContent=r;$('#rpSummary').textContent=rankPoints+' RP';$('#xpSummary').textContent=`Pase: nivel ${lv} · ${xp}/100 XP`;$('#rankName').textContent=r;$('#rankPoints').textContent=rankPoints+' RP';$('#passLevel').textContent=`NIVEL ${lv} / 50`;$('#passXp').textContent=lv===50?'¡Pase completado!':`${xp} / 100 XP`;$('#passProgress').style.width=(lv===50?100:xp)+'%';$('#passRewards').innerHTML=Array.from({length:50},(_,i)=>`<div class="reward ${i+1>lv?'locked':''}"><b>${i+1}</b><br>${i%10===9?'🎭 Skin':i%5===4?'✨ Efecto':'🪙 Monedas'}${i+1<=lv?'<br>✓':''}</div>`).join('');$('#passMission').textContent=`Misión: juega 3 partidas. Progreso: ${Math.min(3,seasonGames)}/3 · ${Math.min(3,seasonGames)>=3?'¡Completada! +50 XP (al completar la próxima partida)':''}`}
+function renderHeroes(){let box=$('#heroList');box.innerHTML='';roster.forEach((n,i)=>{let ok=unlocked.includes(n),b=document.createElement('button');b.className='hero'+(selectedHero===n?' selected':'');b.disabled=!ok;b.innerHTML=`${ok?'⭐':'🔒'} ${n}<small>${ok?'Desbloqueado':`Desbloquea en el pase o gana partidas (${i+1})`}</small>`;b.onclick=()=>{selectedHero=n;renderHeroes()};box.append(b)});refreshProgress()}
+$('#openRanked').onclick=()=>{$('#rankScreen').classList.remove('hidden');refreshProgress()};$('#closeRanked').onclick=()=>$('#rankScreen').classList.add('hidden');$('#openPass').onclick=()=>{$('#passScreen').classList.remove('hidden');refreshProgress()};$('#closePass').onclick=()=>$('#passScreen').classList.add('hidden');async function loadLeaderboard(){try{const r=await fetch('/api/leaderboard');const d=await r.json();$('#rankLeaderboard').innerHTML='<b>🏆 TOP 10 GLOBAL</b><br>'+((d.players||[]).map((p,i)=>`${i+1}. ${escapeHtml(p.alias)} — ${p.rp} RP · ${p.rank}`).join('<br>')||'Aún no hay clasificados.')}catch{$('#rankLeaderboard').textContent='Clasificación no disponible.'}}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+$('#openRanked').onclick=()=>{$('#rankScreen').classList.remove('hidden');refreshProgress();loadLeaderboard()};
+$('#startRanked').onclick=async()=>{rankedMode=true;rankedOnline=true;rankedResultSent=false;mode=1;$('#rankScreen').classList.remove('hidden');$('#rankQueueStatus').textContent='Buscando rival...';try{await connectNet();netSend({type:'rankedQueue',profileId,alias,hero:selectedHero,rp:rankPoints});$('#rankQueueStatus').textContent='Buscando un rival de rango parecido...';}catch(e){rankedOnline=false;rankedMode=false;$('#rankScreen').classList.remove('hidden');$('#rankQueueStatus').textContent=e.message;}};
+$('#cancelRanked').onclick=()=>{if(netSocket&&netSocket.readyState===WebSocket.OPEN)netSend({type:'cancelRanked'});rankedOnline=false;rankedMode=false;closeNet();$('#rankQueueStatus').textContent='Búsqueda cancelada.'};
+$('#aliasContinue').onclick=()=>{let v=$('#aliasInput').value.trim();if(!v){$('#aliasInput').focus();return}alias=v;localStorage.setItem('fs_alias',alias);showMenu()};
+$('#aliasInput').addEventListener('keydown',e=>{if(e.key==='Enter')$('#aliasContinue').click()});
+document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{mode=Number(b.dataset.mode);document.querySelectorAll('[data-mode]').forEach(x=>x.classList.toggle('active',x===b))});
+
+function setNetInfo(message,isError=false){const el=$('#netInfo');if(el){el.textContent=message;el.classList.toggle('netError',isError)}}
+function netSend(data){if(netSocket&&netSocket.readyState===WebSocket.OPEN)netSocket.send(JSON.stringify(data));else setNetInfo('No hay conexión con el servidor.',true)}
+function connectNet(){
+ return new Promise((resolve,reject)=>{
+  if(netSocket&&netSocket.readyState===WebSocket.OPEN)return resolve();
+  if(netSocket&&netSocket.readyState===WebSocket.CONNECTING){let check=setInterval(()=>{if(netSocket.readyState===WebSocket.OPEN){clearInterval(check);resolve()}else if(netSocket.readyState===WebSocket.CLOSED){clearInterval(check);reject(new Error('No se pudo conectar.'))}},100);setTimeout(()=>{clearInterval(check);reject(new Error('El servidor tardó demasiado. Si acaba de despertar, vuelve a intentarlo en un minuto.'))},75000);return}
+  const proto=location.protocol==='https:'?'wss://':'ws://';
+  netSocket=new WebSocket(proto+location.host+'/ws');
+  const firstTimeout=setTimeout(()=>reject(new Error('El servidor tardó demasiado. Si acaba de despertar, espera un minuto y vuelve a intentar.')),75000);
+  netSocket.onopen=()=>{clearTimeout(firstTimeout);setNetInfo('Conectado al servidor.');netPingTimer=setInterval(()=>netSend({type:'ping'}),25000);resolve()};
+  netSocket.onmessage=e=>{let msg;try{msg=JSON.parse(e.data)}catch{return}handleNetMessage(msg)};
+  netSocket.onerror=()=>{clearTimeout(firstTimeout);setNetInfo('No se pudo conectar. Revisa que el servidor esté publicado.',true);reject(new Error('Error de conexión.'))};
+  netSocket.onclose=()=>{if(netPingTimer)clearInterval(netPingTimer);netPingTimer=null;setNetInfo('Conexión cerrada. Vuelve a entrar a la sala.',true);if(onlineMode){running=false;$('#status').textContent='Se perdió la conexión con el servidor.'}};
+ });
+}
+async function createOnlineRoom(){
+ try{setNetInfo('Conectando al servidor...');await connectNet();netSend({type:'createRoom',alias,hero:selectedHero,mode});}
+ catch(e){setNetInfo(e.message+' Abre el juego desde el enlace de Render.',true)}
+}
+async function joinOnlineRoom(){
+ const code=$('#roomCodeInput').value.trim().toUpperCase();if(code.length!==4){setNetInfo('Escribe el código de 4 letras.',true);return}
+ try{setNetInfo('Buscando la sala...');await connectNet();netSend({type:'joinRoom',code,alias,hero:selectedHero});}
+ catch(e){setNetInfo(e.message+' Abre el juego desde el enlace de Render.',true)}
+}
+function renderLobby(msg){
+ roomCode=msg.code;isHost=msg.hostId===netId;netPlayers=msg.players||[];
+ $('#roomCode').textContent=roomCode||'----';
+ $('#roomPlayers').innerHTML='';
+ netPlayers.forEach((p,i)=>{let d=document.createElement('div');d.className='roomPlayer';d.textContent=`${p.team===0?'🔵':'🔴'} ${p.alias} — ${p.hero}${p.id===msg.hostId?' 👑':''}`;$('#roomPlayers').append(d)});
+ $('#lobbyStatus').textContent=`Modo ${msg.mode} vs ${msg.mode} · ${netPlayers.length}/${msg.mode*2} jugadores conectados`;
+ $('#startOnline').classList.toggle('hidden',!isHost);$('#startOnline').disabled=!isHost||netPlayers.length<1;
+ $('#lobbyScreen').classList.remove('hidden');$('#menu').classList.add('hidden');
+}
+function closeNet(){
+ if(netStateTimer){clearInterval(netStateTimer);netStateTimer=null}if(netPingTimer){clearInterval(netPingTimer);netPingTimer=null}
+ if(netSocket&&netSocket.readyState===WebSocket.OPEN){netSend({type:'leaveRoom'});netSocket.close()}
+ netSocket=null;onlineMode=false;netId=null;roomCode='';netPlayers=[];isHost=false;
+}
+function handleNetMessage(msg){
+ if(msg.type==='error'){setNetInfo(msg.message,true);$('#lobbyStatus').textContent=msg.message;return}
+ if(msg.type==='pong')return;
+ if(msg.type==='roomState'){netId=msg.selfId;if(msg.ranked){roomCode=msg.code;isHost=msg.hostId===netId;netPlayers=msg.players||[];return}renderLobby(msg);return}
+ if(msg.type==='roomUpdate'){if(onlineMode){netPlayers=msg.players||netPlayers;const newHost=msg.hostId===netId;if(newHost!==isHost){isHost=newHost;fighters.filter(f=>f.isBot).forEach(f=>f.isRemote=!isHost)}return}renderLobby(msg);return}
+ if(msg.type==='leftRoom'){return}
+ if(msg.type==='playerLeft'){
+  const f=fighters.find(x=>x.netId===msg.id);if(f){f.alive=false;scene.remove(f.g);f.label.style.opacity='.35';f.label.querySelector('span').textContent='SALIO'}
+  if(msg.hostId===netId)isHost=true;
+  $('#status').textContent=msg.message||'Un jugador salió.';return;
+ }
+ if(msg.type==='rankedUpdate'){rankPoints=msg.rp;localStorage.setItem('fs_rp',rankPoints);refreshProgress();loadLeaderboard();return}
+ if(msg.type==='rankedWaiting'){$('#rankQueueStatus').textContent=msg.message;return}
+ if(msg.type==='gameStart'){netPlayers=msg.players||[];isHost=msg.hostId===netId;if(msg.ranked){rankedMode=true;rankedOnline=true;rankedResultSent=false;mode=1;$('#rankScreen').classList.add('hidden');}startOnlineGame(msg);return}
+ if(msg.type==='states'){
+  for(const st of msg.items||[]){let f=fighters.find(x=>x.netId===st.id);if(!f||!f.isRemote)continue;f.g.position.set(st.x,st.y,st.z);f.g.rotation.y=st.rotation;f.damage=st.damage;updateHud(f);if(f.alive&&!st.alive){f.alive=false;scene.remove(f.g);f.label.style.opacity='.35';f.label.querySelector('span').textContent='FUERA'}}
+  return;
+ }
+ if(msg.type==='attack'){
+  const actor=fighters.find(x=>x.netId===msg.actorId),target=fighters.find(x=>x.netId===msg.targetId);
+  if(actor&&target&&target.alive){spawnEffect(actor,msg.shape,msg.color,null,0,0);target.damage+=msg.damage;let dir=target.g.position.clone().sub(actor.g.position);dir.y=0;if(dir.length()<.01)dir.set(0,0,1);dir.normalize();target.vel.add(dir.multiplyScalar(msg.force+target.damage*.045));target.vel.y+=msg.force>7?4.8:2.5;target.stun=.3;updateHud(target)}
+ }
+}
+function startOnlineGame(msg){
+ clearFight();onlineMode=true;$('#lobbyScreen').classList.add('hidden');$('#menu').classList.add('hidden');$('#resultScreen').classList.add('hidden');$('#celebrationScreen').classList.add('hidden');
+ const m=msg.mode||mode;mode=m;const counts=[0,0];
+ function pos(team,index){return {x:(team===0?-2.7:2.7)+(index%2)*.85*(team===0?1:-1),z:-1.7+Math.floor(index/2)*1.65}}
+ for(const p of (msg.players||[])){
+  const team=p.team===1?1:0,idx=counts[team]++,v=pos(team,idx),isMe=p.id===netId;
+  const hero=p.hero||'Robot',color=colors[Math.max(0,roster.indexOf(hero))]||0xffd34e;
+  makeFighter(`${p.alias} (${hero})`,color,v.x,v.z,team,isMe);
+  const f=fighters[fighters.length-1];f.netId=p.id;f.isRemote=!isMe;f.isBot=false;
+ }
+ let botNum=0;
+ for(let team=0;team<2;team++)while(counts[team]<m){let idx=counts[team]++,hero=roster[(botNum+1)%roster.length],v=pos(team,idx);makeFighter(hero,colors[roster.indexOf(hero)],v.x,v.z,team,false);let f=fighters[fighters.length-1];f.netId='bot-'+(botNum++);f.isBot=true;f.isRemote=!isHost;}
+ $('#status').textContent=`ONLINE · Sala ${roomCode} · ${m} vs ${m}`;running=true;
+ if(netStateTimer)clearInterval(netStateTimer);
+ netStateTimer=setInterval(()=>{
+  if(!onlineMode||!running)return;
+  const items=fighters.filter(f=>!f.isRemote&&(f.isPlayer||(isHost&&f.isBot))).map(f=>({id:f.netId,x:f.g.position.x,y:f.g.position.y,z:f.g.position.z,rotation:f.g.rotation.y,damage:f.damage,alive:f.alive}));
+  if(items.length)netSend({type:'states',items});
+ },50);
+}
+$('#createRoom').onclick=createOnlineRoom;$('#joinRoom').onclick=joinOnlineRoom;$('#roomCodeInput').addEventListener('keydown',e=>{if(e.key==='Enter')joinOnlineRoom()});
+$('#startOnline').onclick=()=>netSend({type:'startGame'});
+$('#leaveRoom').onclick=()=>{closeNet();$('#lobbyScreen').classList.add('hidden');showMenu()};
+
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x8ed8ff);scene.fog=new THREE.Fog(0x8ed8ff,25,65);
+const camera=new THREE.PerspectiveCamera(55,innerWidth/innerHeight,.1,100);camera.position.set(0,13,19);camera.lookAt(0,0,0);
+const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,1));renderer.shadowMap.enabled=false;document.body.appendChild(renderer.domElement);
+scene.add(new THREE.HemisphereLight(0xffffff,0x526080,2));let sun=new THREE.DirectionalLight(0xffffff,2);sun.position.set(-8,15,8);sun.castShadow=true;scene.add(sun);
+const material=c=>new THREE.MeshStandardMaterial({color:c,roughness:.72});
+let plat=new THREE.Mesh(new THREE.CylinderGeometry(9,9,1.2,56),material(0x3e9d70));plat.position.y=-.7;plat.receiveShadow=true;scene.add(plat);
+let rim=new THREE.Mesh(new THREE.TorusGeometry(9,.22,10,72),material(0xffd34e));rim.rotation.x=Math.PI/2;rim.position.y=-.05;scene.add(rim);
+for(let i=0;i<8;i++){let a=i*Math.PI/4,p=new THREE.Mesh(new THREE.CylinderGeometry(.15,.22,1.8,10),material(0xff7c59));p.position.set(Math.cos(a)*8.2,.1,Math.sin(a)*8.2);scene.add(p)}
+// Canasta de celebración al fondo de la arena
+const hoopGroup=new THREE.Group();scene.add(hoopGroup);hoopGroup.position.set(0,0,-7.15);
+let pole=new THREE.Mesh(new THREE.CylinderGeometry(.12,.16,3.2,12),material(0x555d70));pole.position.set(0,1.6,-.15);hoopGroup.add(pole);
+let board=new THREE.Mesh(new THREE.BoxGeometry(2.1,1.35,.13),material(0xf4f5fa));board.position.set(0,3.15,-.18);hoopGroup.add(board);
+let square=new THREE.Mesh(new THREE.BoxGeometry(.75,.48,.025),material(0xe34b45));square.position.set(0,3.05,-.095);hoopGroup.add(square);
+let rimMesh=new THREE.Mesh(new THREE.TorusGeometry(.52,.075,10,32),material(0xff783d));rimMesh.rotation.x=Math.PI/2;rimMesh.position.set(0,2.62,.22);hoopGroup.add(rimMesh);
+let net=new THREE.Mesh(new THREE.CylinderGeometry(.48,.28,.62,16,1,true),new THREE.MeshBasicMaterial({color:0xffffff,wireframe:true}));net.position.set(0,2.3,.22);hoopGroup.add(net);
+let victory=null;
+
+
+function makeFighter(name,color,x,z,team,isPlayer=false){
+ const hero=isPlayer?selectedHero:(roster.find(n=>name.includes(n))||'Robot');
+ const looks={
+  'Mbappé':{skin:0x8b583c,hair:0x171313,shirt:0x183f9b,shorts:0x183f9b,number:'10',accent:0xf2f2f2},
+  'Messi':{skin:0xd69a70,hair:0x38251c,shirt:0x78bdf1,shorts:0x243d91,number:'10',accent:0xffffff,beard:true,stripes:true},
+  'Cristiano Ronaldo':{skin:0xc98d65,hair:0x211b19,shirt:0xf4f2ed,shorts:0x222222,number:'7',accent:0x222222},
+  'Canelo':{skin:0xe0a078,hair:0xb95b2c,shirt:0x9c1728,shorts:0x9c1728,number:'C',accent:0xffffff,beard:true,gloves:true},
+  'Michael Jackson':{skin:0xb98265,hair:0x171313,shirt:0x171717,shorts:0x171717,number:'MJ',accent:0xc9a64b,hat:true},
+  'Neymar':{skin:0xc98b62,hair:0x8a633d,shirt:0xf0d22e,shorts:0x2b5aab,number:'10',accent:0x269b55},
+  'MrBeast':{skin:0xe0b18d,hair:0x513b2d,shirt:0x26a9e0,shorts:0x202c45,number:'B',accent:0xffffff},
+  'Robot':{skin:0x9ba8b7,hair:0x45566a,shirt:0x536779,shorts:0x303c4c,number:'AI',accent:0x6dfcff,robot:true},
+  'Panda':{skin:0xffffff,hair:0x171717,shirt:0x222222,shorts:0xffffff,number:'P',accent:0x75bf65,panda:true},
+  'Tiburón':{skin:0x7297b6,hair:0x466b8c,shirt:0x477da4,shorts:0x284d6c,number:'SH',accent:0x9bdfff,shark:true},
+  'Mario':{skin:0xf0b78b,hair:0x6b321c,shirt:0xe52b28,shorts:0x2458bd,number:'M',accent:0xffffff,hat:true},'Sonic':{skin:0x2469db,hair:0x1450bb,shirt:0x2469db,shorts:0x2469db,number:'S',accent:0xffd52a},'Link':{skin:0xf0c69a,hair:0xd9b45c,shirt:0x33834d,shorts:0x28633b,number:'L',accent:0xffd34e},'Pikachu':{skin:0xffdf22,hair:0xffdf22,shirt:0xffdf22,shorts:0xffdf22,number:'P',accent:0x9c2b20},'Kirby':{skin:0xf49ac2,hair:0xf49ac2,shirt:0xf49ac2,shorts:0xf49ac2,number:'K',accent:0xffffff},'Spider-Man':{skin:0xd51f36,hair:0x183b83,shirt:0xd51f36,shorts:0x183b83,number:'SP',accent:0xffffff},'Goku':{skin:0xe5b38d,hair:0x171313,shirt:0xf07819,shorts:0xf07819,number:'悟',accent:0x2458bd},'Wednesday':{skin:0xe6c9b8,hair:0x171313,shirt:0x292238,shorts:0x292238,number:'W',accent:0xffffff},'SpongeBob':{skin:0xffdf22,hair:0xffdf22,shirt:0xffffff,shorts:0x8a6035,number:'SB',accent:0x3c9bdb},'Naruto':{skin:0xdca77d,hair:0xff8a22,shirt:0xff8a22,shorts:0x183b83,number:'N',accent:0xffffff}
+ };
+ const L=looks[hero]||looks['Robot'];
+ const g=new THREE.Group();g.position.set(x,0,z);scene.add(g);const legs=[];
+ const mat=(c,rough=.72)=>new THREE.MeshStandardMaterial({color:c,roughness:rough});
+ const skin=mat(L.skin),hairMat=mat(L.hair),shirt=mat(L.shirt),shorts=mat(L.shorts),accent=mat(L.accent);
+ const sphere=(r,material,x,y,z,seg=18)=>{let m=new THREE.Mesh(new THREE.SphereGeometry(r,seg,14),material);m.position.set(x,y,z);m.castShadow=true;g.add(m);return m};
+ const capsule=(r,len,material,x,y,z)=>{let m=new THREE.Mesh(new THREE.CapsuleGeometry(r,len,4,10),material);m.position.set(x,y,z);m.castShadow=true;g.add(m);return m};
+ // torso, shorts, legs and shoes
+ capsule(.43,.7,shirt,0,1.03,0);
+ let shortsMesh=new THREE.Mesh(new THREE.BoxGeometry(.68,.35,.42),shorts);shortsMesh.position.set(0,.55,0);shortsMesh.castShadow=true;g.add(shortsMesh);
+ for(let side of [-1,1]){
+  legs.push(capsule(.13,.42,skin,side*.22,.28,0));
+  let shoe=new THREE.Mesh(new THREE.BoxGeometry(.25,.13,.38),mat(0x171a22));shoe.position.set(side*.22,.08,.08);g.add(shoe);
+ }
+ // neck and head
+ capsule(.15,.18,skin,0,1.57,0);
+ sphere(.52,skin,0,1.98,0);
+ // hair cap and individual hair silhouette
+ let cap=new THREE.Mesh(new THREE.SphereGeometry(.54,18,12,0,Math.PI*2,0,Math.PI*.52),hairMat);cap.position.set(0,2.12,-.015);g.add(cap);
+ if(hero==='Mbappé'||hero==='Cristiano Ronaldo'){
+  for(let i=-2;i<=2;i++){let curl=sphere(.075,hairMat,i*.16,2.42,.02,10);curl.scale.set(1,.65,1)}
+ }
+ if(L.hat){let brim=new THREE.Mesh(new THREE.CylinderGeometry(.48,.48,.07,24),hairMat);brim.position.set(0,2.24,0);g.add(brim);let crown=new THREE.Mesh(new THREE.CylinderGeometry(.29,.34,.3,20),hairMat);crown.position.set(0,2.39,0);g.add(crown)}
+ // face: eyes, brows, nose, smile
+ for(let side of [-1,1]){
+  sphere(.052,mat(0xffffff),side*.18,2.02,.46,10);
+  sphere(.027,mat(0x171717),side*.18,2.02,.505,8);
+  let brow=new THREE.Mesh(new THREE.BoxGeometry(.14,.035,.035),hairMat);brow.position.set(side*.18,2.13,.47);g.add(brow);
+ }
+ sphere(.055,skin,0,1.94,.51,10);
+ let mouth=new THREE.Mesh(new THREE.BoxGeometry(.15,.025,.025),mat(0x642f2a));mouth.position.set(0,1.82,.49);g.add(mouth);
+ if(L.beard){let beard=sphere(.32,hairMat,0,1.78,.27);beard.scale.set(1,.48,.72)}
+ // jersey details and player number
+ if(L.stripes){for(let xStripe of [-.25,-.08,.08,.25]){let stripe=new THREE.Mesh(new THREE.BoxGeometry(.045,.62,.015),accent);stripe.position.set(xStripe,1.04,.414);g.add(stripe)}}
+ let badge=new THREE.Mesh(new THREE.CircleGeometry(.09,16),accent);badge.position.set(-.25,1.2,.414);g.add(badge);
+ let canvas=document.createElement('canvas');canvas.width=128;canvas.height=128;let ctx=canvas.getContext('2d');
+ ctx.clearRect(0,0,128,128);ctx.fillStyle='#ffffff';ctx.font='bold 70px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(L.number,64,68);
+ let numTex=new THREE.CanvasTexture(canvas);let num=new THREE.Mesh(new THREE.PlaneGeometry(.34,.38),new THREE.MeshBasicMaterial({map:numTex,transparent:true,depthWrite:false}));num.position.set(0,1.08,.438);g.add(num);
+ // articulated arms for punches and dunk pose
+ let arms=[];
+ for(let side of [-1,1]){
+  let pivot=new THREE.Group();pivot.position.set(side*.48,1.35,0);g.add(pivot);
+  let upper=new THREE.Mesh(new THREE.CapsuleGeometry(.13,.34,4,8),skin);upper.position.set(side*.06,-.22,.02);upper.rotation.z=side*.22;pivot.add(upper);
+  let glove=new THREE.Mesh(new THREE.SphereGeometry(L.gloves?.19:.13,12,10),L.gloves?mat(0xd92636):skin);glove.position.set(side*.08,-.48,.07);pivot.add(glove);
+  if(L.gloves){let cuff=new THREE.Mesh(new THREE.CylinderGeometry(.13,.13,.13,12),accent);cuff.position.set(side*.08,-.37,.07);pivot.add(cuff)}
+  arms.push(pivot);
+ }
+ const fLabel=document.createElement('div');fLabel.className='fighter';fLabel.style.setProperty('--c','#'+color.toString(16).padStart(6,'0'));fLabel.innerHTML=`<b>${name}</b><span>0%</span><div class="meter"><i></i></div>`;$('#fighters').append(fLabel);
+ let f={g,name,team,isPlayer,damage:0,alive:true,vel:new THREE.Vector3(),cool:0,stun:0,label:fLabel,hero,arms,legs,baseY:0,netId:null,isRemote:false,isBot:false};fighters.push(f);if(isPlayer)player=f;
+}
+function clearFight(){if(victory&&victory.ball)scene.remove(victory.ball);victory=null;fighters.forEach(f=>{scene.remove(f.g);f.label.remove()});effects.forEach(e=>scene.remove(e.mesh));effects=[];fighters=[];player=null}
+function reset(){clearFight();for(let i=0;i<mode*2;i++){let team=i<mode?0:1,a=i/(mode*2)*Math.PI*2,r=3.5+Math.random()*1.8;let name=i===0?alias+' ('+selectedHero+')':roster[(i-1)%roster.length];makeFighter(name,i===0?( ({'Mbappé':0x183f9b,'Messi':0x78bdf1,'Cristiano Ronaldo':0xf4f2ed,'Canelo':0x9c1728,'Michael Jackson':0x171717,'Neymar':0xf0d22e,'MrBeast':0x26a9e0,'Robot':0x536779,'Panda':0x222222,'Tiburón':0x477da8})[selectedHero]||0xffd34e):colors[(i-1)%colors.length],Math.cos(a)*r,Math.sin(a)*r,team,i===0)}$('#status').textContent=rankedMode?`🏆 COMPETITIVO · ${rankInfo()} · ${rankPoints} RP`:`${mode}v${mode} · ¡A luchar!`}
+function updateHud(f){f.label.querySelector('span').textContent=Math.round(f.damage)+'%';f.label.querySelector('i').style.width=Math.min(100,f.damage/180*100)+'%'}
+const heroMoves={
+ 'Michael Jackson':{label:'Moonwalk sónico',color:0xe9f5ff,shape:'ring',range:5,damage:27},
+ 'Mbappé':{label:'Tiro supersónico',color:0xffe23d,shape:'ball',range:9,damage:28},
+ 'Canelo':{label:'Puño de fuego',color:0xff4b24,shape:'glove',range:6,damage:32},
+ 'Cristiano Ronaldo':{label:'Remate CR7',color:0xffffff,shape:'wave',range:9,damage:30},
+ 'Messi':{label:'Rayo mágico',color:0x45c7ff,shape:'star',range:8,damage:26},
+ 'Neymar':{label:'Regate brillante',color:0xff58d0,shape:'star',range:6,damage:24},
+ 'MrBeast':{label:'Lluvia de premios',color:0x39e7a1,shape:'gift',range:8,damage:25},
+ 'Robot':{label:'Rayo láser',color:0x6dfcff,shape:'laser',range:10,damage:29},
+ 'Panda':{label:'Golpe de bambú',color:0x9be36a,shape:'bamboo',range:6,damage:27},
+ 'Tiburón':{label:'Tsunami',color:0x249dff,shape:'wave',range:8,damage:30}
+};
+function nearestEnemy(f,maxRange){let target=null,best=maxRange;for(let o of fighters){if(!o.alive||o.team===f.team||o===f)continue;let d=f.g.position.distanceTo(o.g.position);if(d<best){best=d;target=o}}return target}
+function makeEffectMesh(shape,color){
+ let mat=new THREE.MeshBasicMaterial({color,transparent:true,opacity:.95});
+ if(shape==='ball'){
+  let ball=new THREE.Mesh(new THREE.SphereGeometry(.42,18,14),mat);
+  let patchMat=new THREE.MeshBasicMaterial({color:0x20232b});
+  for(let i=0;i<5;i++){let patch=new THREE.Mesh(new THREE.CircleGeometry(.105,5),patchMat);let a=i*Math.PI*2/5;patch.position.set(Math.cos(a)*.405,Math.sin(a)*.22,.18);patch.lookAt(patch.position.clone().multiplyScalar(2));ball.add(patch)}
+  return ball;
+ }
+ if(shape==='star')return new THREE.Mesh(new THREE.OctahedronGeometry(.58,1),mat);
+ if(shape==='glove')return new THREE.Mesh(new THREE.SphereGeometry(.48,16,12),mat);
+ if(shape==='gift')return new THREE.Mesh(new THREE.BoxGeometry(.72,.72,.72),mat);
+ if(shape==='laser')return new THREE.Mesh(new THREE.CylinderGeometry(.16,.28,1.5,12),mat);
+ if(shape==='bamboo')return new THREE.Mesh(new THREE.CylinderGeometry(.18,.18,1.5,10),mat);
+ if(shape==='wave')return new THREE.Mesh(new THREE.TorusGeometry(.65,.2,8,20),mat);
+ return new THREE.Mesh(new THREE.TorusGeometry(1.05,.16,8,24),mat);
+}
+function spawnEffect(f,shape,color,target,damage,force){
+ let mesh=makeEffectMesh(shape,color);scene.add(mesh);
+ let dir=target?target.g.position.clone().sub(f.g.position):new THREE.Vector3(Math.sin(f.g.rotation.y),0,Math.cos(f.g.rotation.y));
+ dir.y=0;if(dir.length()<.01)dir.set(0,0,1);dir.normalize();
+ mesh.position.copy(f.g.position).add(new THREE.Vector3(0,1.25,0)).add(dir.clone().multiplyScalar(.9));
+ if(shape==='laser'||shape==='bamboo')mesh.rotation.x=Math.PI/2;
+ effects.push({mesh,dir,target,life:.65,damage,force,owner:f,shape});
+}
+function hit(f,special=false){
+ if(!running||f.cool>0)return;
+ f.cool=special?1.35:.48;
+ if(f.arms){f.arms[1].rotation.x=-1.65;f.arms[0].rotation.x=.35;setTimeout(()=>{if(f.arms){f.arms[1].rotation.x=0;f.arms[0].rotation.x=0}},220)}
+ if(!special){
+   let target=nearestEnemy(f,2.5);
+   // Puño grande y visible que sale hacia delante
+   spawnEffect(f,'glove',0xffa52e,target,12,4.5);
+   if(onlineMode&&target&&f.netId&&target.netId)netSend({type:'attack',actorId:f.netId,targetId:target.netId,damage:12,force:4.5,special:false,shape:'glove',color:0xffa52e});
+   return;
+ }
+ let move=heroMoves[f.hero]||heroMoves['Robot'];
+ let target=nearestEnemy(f,move.range);
+ spawnEffect(f,move.shape,move.color,target,move.damage,9);
+ if(onlineMode&&target&&f.netId&&target.netId)netSend({type:'attack',actorId:f.netId,targetId:target.netId,damage:move.damage,force:9,special:true,shape:move.shape,color:move.color});
+ $('#status').textContent=`${f.name}: ${move.label.toUpperCase()}!`;
+}
+function updateEffects(dt){
+ for(let i=effects.length-1;i>=0;i--){
+  let e=effects[i];e.life-=dt;
+  if(e.shape==='ring'||e.shape==='wave'){e.mesh.position.add(e.dir.clone().multiplyScalar(dt*7));e.mesh.scale.multiplyScalar(1+dt*1.5);e.mesh.rotation.y+=dt*5;}
+  else {e.mesh.position.add(e.dir.clone().multiplyScalar(dt*(e.shape==='glove'?8:10)));e.mesh.rotation.x+=dt*5;e.mesh.rotation.y+=dt*7;}
+  if(e.target&&e.target.alive&&e.mesh.position.distanceTo(e.target.g.position.clone().add(new THREE.Vector3(0,1,0)))<1.15){
+    let t=e.target,dir=t.g.position.clone().sub(e.owner.g.position).normalize();t.damage+=e.damage;t.vel.add(dir.multiplyScalar(e.force+t.damage*.045));t.vel.y+=e.force>7?4.8:2.5;t.stun=.3;updateHud(t);t.g.scale.setScalar(1.2);e.life=0;
+  }
+  if(e.life<=0){scene.remove(e.mesh);effects.splice(i,1);}
+ }
+}
+
+function showResult(win){
+ if(win){let next=roster.find(n=>!unlocked.includes(n));if(next){unlocked.push(next);localStorage.setItem('fs_unlocked',JSON.stringify(unlocked));$('#resultTitle').textContent='¡VICTORIA! 🏆';$('#resultMessage').textContent=`¡Ganaste! Desbloqueaste a ${next}. Llevas ${wins} victorias.`}else{$('#resultTitle').textContent='¡CAMPEÓN! 🏆';$('#resultMessage').textContent='¡Ya desbloqueaste a todos los luchadores!'}}
+ else{$('#resultTitle').textContent='¡TE ELIMINARON!';if(rankedMode&&!rankedOnline){rankPoints=Math.max(0,rankPoints-10);localStorage.setItem('fs_rp',rankPoints)}rankedMode=false;passXP=Math.min(5000,passXP+25);localStorage.setItem('fs_pass_xp',passXP);$('#resultMessage').textContent='Ganas 25 XP por participar. ¡Inténtalo otra vez!';refreshProgress()}
+ $('#resultScreen').classList.remove('hidden');
+ if(rankedOnline){rankedOnline=false;rankedMode=false;}
+}
+function beginCelebration(style){
+ $('#celebrationScreen').classList.add('hidden');
+ let ball=null;
+ if(style==='dunk'){ball=new THREE.Mesh(new THREE.SphereGeometry(.28,18,14),material(0xe87524));scene.add(ball)}
+ victory={time:0,style,ball,player};
+ $('#status').textContent='¡VICTORIA! ¡A CELEBRAR!';
+}
+document.querySelectorAll('[data-dance]').forEach(b=>b.onclick=()=>beginCelebration(b.dataset.dance));
+function endGame(win){
+ if(!running)return;running=false;
+ if(rankedOnline&&!rankedResultSent){rankedResultSent=true;netSend({type:'rankedResult',win:!!win});}
+ if(win){
+  wins++;localStorage.setItem('fs_wins',wins);seasonGames++;localStorage.setItem('fs_season_games',seasonGames);let earnedXP=rankedMode?150:75;passXP=Math.min(5000,passXP+earnedXP);localStorage.setItem('fs_pass_xp',passXP);if(rankedMode&&!rankedOnline){rankPoints+=25;localStorage.setItem('fs_rp',rankPoints)}rankedMode=false;refreshProgress();
+  if(player&&player.alive){$('#celebrationScreen').classList.remove('hidden');$('#status').textContent='¡ELIGE TU BAILE!';return;}
+ }
+ showResult(win);
+}
+function updateVictory(dt){
+ if(!victory)return;
+ let v=victory;v.time+=dt;let t=v.time,f=v.player,style=v.style;
+ if(style==='dunk'){
+  if(t<.65){f.g.position.x+=(0-f.g.position.x)*Math.min(1,dt*5);f.g.position.z+=(-4.8-f.g.position.z)*Math.min(1,dt*5);f.g.rotation.y=Math.PI;f.g.position.y=Math.sin(t/.65*Math.PI/2)*.15;}
+  else if(t<1.35){
+   let q=(t-.65)/.7;f.g.position.set(0,.15+q*2.25,-4.8-q*.85);
+   if(f.arms){f.arms[1].rotation.x=-2.5;f.arms[1].rotation.z=-.45;f.arms[0].rotation.x=.7}
+   v.ball.position.set(.48,2.05+q*.9,-4.35-q*1.15);f.g.rotation.y=Math.PI;
+  }else if(t<1.75){
+   let q=(t-1.35)/.4;v.ball.position.set(.18,3.1-q*1.2,-6.25);f.g.position.y=2.4-q*1.7;
+   if(f.arms)f.arms[1].rotation.x=-1.1;
+  }else if(t<2.35){
+   let q=(t-1.75)/.6;f.g.position.y=.7+Math.sin(q*Math.PI)*.12;v.ball.position.set(.05,1.7-q*.8,-6.95);
+  }
+ }else if(style==='griddy'){
+  // Alternating knee lifts, heel kicks, arm swings and a little side-to-side bounce.
+  let beat=Math.sin(t*10),step=Math.sin(t*10+Math.PI/2);
+  f.g.position.x=Math.sin(t*5)*.55;f.g.position.y=Math.abs(beat)*.16;
+  f.g.rotation.y=Math.sin(t*5)*.28;
+  if(f.legs){f.legs[0].rotation.x=beat*.85;f.legs[1].rotation.x=-beat*.85;f.legs[0].rotation.z=.22;f.legs[1].rotation.z=-.22}
+  if(f.arms){f.arms[0].rotation.x=-.65+step*.9;f.arms[1].rotation.x=-.65-step*.9;f.arms[0].rotation.z=.3;f.arms[1].rotation.z=-.3}
+ }else if(style==='moonwalk'){
+  f.g.position.z=-3.8-Math.min(t,2.3)*.85;f.g.position.y=.04+Math.abs(Math.sin(t*8))*.035;
+  f.g.rotation.y=Math.PI;
+  if(f.legs){f.legs[0].rotation.x=Math.sin(t*8)*.22;f.legs[1].rotation.x=-Math.sin(t*8)*.22}
+  if(f.arms){f.arms[0].rotation.x=-.2;f.arms[1].rotation.x=-.2;f.arms[1].rotation.z=-.5}
+ }else if(style==='dab'){
+  f.g.position.y=.06+Math.abs(Math.sin(t*7))*.12;f.g.rotation.z=Math.sin(t*5)*.08;
+  if(f.arms){f.arms[0].rotation.x=-2.35;f.arms[0].rotation.z=.7;f.arms[1].rotation.x=.35;f.arms[1].rotation.z=-1.1}
+ }
+ if(t>2.8){
+  if(v.ball)scene.remove(v.ball);
+  f.g.position.y=0;f.g.rotation.z=0;f.g.rotation.y=0;
+  if(f.legs)f.legs.forEach(x=>{x.rotation.set(0,0,0)});
+  if(f.arms)f.arms.forEach(x=>{x.rotation.set(0,0,0)});
+  victory=null;showResult(true);
+ }
+}
+function checkEnd(){let alive=fighters.filter(f=>f.alive),teams=new Set(alive.map(f=>f.team));if(teams.size<=1)endGame(onlineMode?alive.some(f=>f.team===player?.team):alive.some(f=>f.team===0))}
+function start(){onlineMode=false;reset();$('#menu').classList.add('hidden');$('#resultScreen').classList.add('hidden');$('#celebrationScreen').classList.add('hidden');running=true}
+$('#start').onclick=start;$('#back').onclick=()=>{running=false;clearFight();if(onlineMode)closeNet();$('#lobbyScreen').classList.add('hidden');$('#resultScreen').classList.add('hidden');$('#celebrationScreen').classList.add('hidden');showMenu()};$('#resultMenu').onclick=()=>{clearFight();if(onlineMode)closeNet();showMenu()};$('#playAgain').onclick=()=>{if(onlineMode){setNetInfo('Para volver a jugar online, crea otra sala.');closeNet();showMenu()}else start()};
+addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(e.code==='Space'){e.preventDefault();if(player&&player.g.position.y<.06)player.vel.y=8}if(e.key.toLowerCase()==='f'&&player)hit(player);if(e.key.toLowerCase()==='g'&&player)hit(player,true)});
+addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+let clock=new THREE.Clock();
+function update(dt){updateVictory(dt);if(!running)return;updateEffects(dt);for(let f of fighters){if(!f.alive)continue;if(f.isRemote)continue;f.cool=Math.max(0,f.cool-dt);f.stun=Math.max(0,f.stun-dt);
+ if(f.stun<=0){if(f.isPlayer){let dx=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0),dz=(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0),v=new THREE.Vector3(dx,0,dz);if(v.length()){v.normalize();f.g.position.add(v.multiplyScalar(7*dt));f.g.rotation.y=Math.atan2(v.x,v.z)}}else{let foes=fighters.filter(o=>o.alive&&o.team!==f.team);if(foes.length){let t=foes.reduce((a,b)=>f.g.position.distanceTo(a.g.position)<f.g.position.distanceTo(b.g.position)?a:b),d=t.g.position.clone().sub(f.g.position);d.y=0;if(d.length()>1.45){d.normalize();f.g.position.add(d.multiplyScalar(2.7*dt));f.g.rotation.y=Math.atan2(d.x,d.z)}else if(Math.random()<.045)hit(f,Math.random()<.15)}}}
+ f.vel.y-=18*dt;f.g.position.add(f.vel.clone().multiplyScalar(dt));f.vel.multiplyScalar(Math.pow(.08,dt));if(f.g.position.y<0){f.g.position.y=0;f.vel.y=0}if(Math.hypot(f.g.position.x,f.g.position.z)>9.2||f.g.position.y< -1){f.alive=false;scene.remove(f.g);f.label.style.opacity='.35';f.label.querySelector('span').textContent='FUERA'}
+ }checkEnd()}
+function loop(){requestAnimationFrame(loop);update(Math.min(clock.getDelta(),.04));renderer.render(scene,camera)}loop();
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+addEventListener('beforeunload',()=>{if(netSocket&&netSocket.readyState===WebSocket.OPEN)netSocket.send(JSON.stringify({type:'leaveRoom'}))});
+if(alias){showMenu()}else{$('#aliasScreen').classList.remove('hidden')}
+</script>
+</body></html>

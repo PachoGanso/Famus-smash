@@ -1,0 +1,37 @@
+FAMOUS SMASH ONLINE - VERSION COMPETITIVO + PASE DE BATALLA
+
+CONTENIDO
+- public/index.html: juego 3D.
+- server.js: servidor para salas privadas online (igual que la versión anterior).
+- package.json y render.yaml: configuración para Render.
+
+NOVEDADES
+1) Modo COMPETITIVO separado: botón propio en el menú, partidas 1 contra 1 contra bots, puntos de rango (RP), siete rangos: Bronce, Plata, Oro, Platino, Diamante, Maestro y Leyenda. Victoria: +25 RP. Derrota: -10 RP.
+2) Pase de batalla: 50 niveles. Las victorias dan 150 XP en competitivo o 75 XP en modo normal; las derrotas dan 25 XP. La experiencia se guarda en el navegador.
+3) Personajes nuevos: Mario, Sonic, Link, Pikachu, Kirby, Spider-Man, Goku, Wednesday, SpongeBob y Naruto, además de los personajes anteriores.
+4) El progreso (RP, XP, alias y desbloqueos) se guarda localmente en el navegador del jugador.
+
+IMPORTANTE - LO QUE TODAVIA FALTA
+- El competitivo ahora tiene cola de emparejamiento 1v1 entre jugadores reales conectados al mismo servidor, empareja por RP y muestra un TOP 10 global. Los RP se actualizan en el servidor (+25 victoria / -10 derrota). IMPORTANTE: los perfiles competitivos de esta versión viven en memoria del servidor y se reinician si Render reinicia el servicio; para guardado permanente y cuentas seguras falta conectar una base PostgreSQL y autenticación.
+- El pase gratuito conserva 50 niveles de XP. La tienda premium y pagos reales no están incluidos; no se realizan cobros.
+- Los personajes nuevos aparecen en la selección y se desbloquean progresivamente ganando partidas, igual que el roster anterior.
+- Las salas privadas online siguen siendo una función distinta del modo competitivo.
+
+PUBLICAR EN RENDER
+1. Descomprime el ZIP.
+2. Sube el contenido de la carpeta famous-smash-online a tu repositorio GitHub (incluida la carpeta public).
+3. En Render crea un Web Service conectado al repositorio.
+4. Build Command: npm install
+5. Start Command: npm start
+6. Espera el estado Live y abre la URL que te da Render.
+
+NOTA: El progreso local no se transfiere automáticamente entre dispositivos o navegadores. El juego usa Three.js desde CDN, por lo que necesita conexión a internet para cargar la biblioteca 3D.
+
+
+NOVEDAD COMPETITIVA ONLINE
+- Abre COMPETITIVO > BUSCAR RIVAL ONLINE.
+- Debe haber otro jugador conectado y buscando para emparejar.
+- El sistema busca el rival con RP más cercano entre quienes esperan.
+- Si no hay rival, permanece en cola; usa CANCELAR para salir.
+- El TOP 10 y RP son temporales hasta conectar PostgreSQL persistente.
+- No uses el competitivo para torneos importantes todavía: el resultado depende del cliente y aún no tiene antitrampas/servidor autoritativo.
